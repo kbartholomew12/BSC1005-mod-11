@@ -1,260 +1,1090 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tumor Board Simulation Interactive Guide</title>
-    <style>
-        :root {
-            --primary: #1e3a8a;
-            --secondary: #0d9488;
-            --bg: #f8fafc;
-            --card-bg: #ffffff;
-            --text: #334155;
-            --accent: #e11d48;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Virtual Tumor Board: Cell Cycle Failure Simulation</title>
+  <style>
+    :root {
+      --valencia-red: #bf311a;
+      --deep-red: #8f2415;
+      --ink: #1f2933;
+      --muted: #52606d;
+      --soft-bg: #f7f8fa;
+      --card: #ffffff;
+      --line: #d9e2ec;
+      --blue: #1d4ed8;
+      --green: #047857;
+      --purple: #6d28d9;
+      --orange: #c2410c;
+      --shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            line-height: 1.5;
-            margin: 0;
-            padding: 20px;
-        }
+    * {
+      box-sizing: border-box;
+    }
 
-        .container {
-            max-width: 850px;
-            margin: 0 auto;
-        }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(191, 49, 26, 0.14), transparent 32%),
+        linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
+      color: var(--ink);
+      line-height: 1.5;
+    }
 
-        .card {
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            border: 1px solid #e2e8f0;
-        }
+    .app {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 24px;
+    }
 
-        h2 { color: var(--primary); margin-top: 0; display: flex; align-items: center; gap: 8px; }
-        h3 { color: var(--secondary); margin-top: 0; }
+    .hero {
+      background: linear-gradient(135deg, var(--valencia-red), var(--deep-red));
+      color: #fff;
+      border-radius: 24px;
+      padding: 34px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
 
-        .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn:hover { background-color: #172554; }
-        .btn-secondary { background-color: var(--secondary); }
-        .btn-secondary:hover { background-color: #115e59; }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -80px;
+      top: -80px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.13);
+    }
 
-        .grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 15px; }
-        @media(min-width: 600px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      letter-spacing: -1px;
+    }
 
-        .case-selector {
-            border: 2px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 15px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-            background: #f1f5f9;
-        }
-        .case-selector.active {
-            border-color: var(--secondary);
-            background: #f0fdfa;
-            font-weight: bold;
-        }
+    .hero p {
+      margin: 0;
+      max-width: 850px;
+      font-size: 1.08rem;
+      opacity: 0.96;
+    }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-            font-size: 0.9rem;
-        }
-        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
-        th { background-color: #f1f5f9; }
+    .badge-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
 
-        textarea {
-            width: 100%;
-            height: 80px;
-            padding: 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            resize: vertical;
-            box-sizing: border-box;
-            font-family: inherit;
-        }
+    .badge {
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.28);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
 
-        .step-nav { display: flex; justify-content: space-between; margin-top: 20px; }
-        .hidden { display: none; }
-        .alert { background: #fff1f2; border-left: 4px solid var(--accent); padding: 12px; border-radius: 4px; }
-        
-        ol { padding-left: 20px; }
-        li { margin-bottom: 8px; }
-    </style>
+    .grid {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 20px;
+      margin-top: 22px;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .app {
+        padding: 14px;
+      }
+
+      .hero {
+        padding: 24px;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.45rem;
+      color: var(--ink);
+    }
+
+    .card h3 {
+      margin-top: 20px;
+      color: var(--ink);
+    }
+
+    .section-label {
+      display: inline-block;
+      background: #fff1ed;
+      color: var(--deep-red);
+      font-weight: 800;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 10px;
+    }
+
+    .notice {
+      background: #fff7ed;
+      border-left: 5px solid var(--orange);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 14px 0;
+    }
+
+    .success {
+      background: #ecfdf5;
+      border-left: 5px solid var(--green);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 14px 0;
+    }
+
+    .info {
+      background: #eff6ff;
+      border-left: 5px solid var(--blue);
+      padding: 14px 16px;
+      border-radius: 12px;
+      margin: 14px 0;
+    }
+
+    label {
+      display: block;
+      font-weight: 800;
+      margin: 14px 0 6px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #bcccdc;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 1rem;
+      font-family: inherit;
+      background: white;
+    }
+
+    textarea {
+      min-height: 95px;
+      resize: vertical;
+    }
+
+    .small-text {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-weight: 800;
+      font-size: 0.96rem;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+    }
+
+    .btn-primary {
+      background: var(--valencia-red);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: var(--ink);
+    }
+
+    .btn-blue {
+      background: var(--blue);
+      color: white;
+    }
+
+    .btn-green {
+      background: var(--green);
+      color: white;
+    }
+
+    .btn-purple {
+      background: var(--purple);
+      color: white;
+    }
+
+    .patient-file {
+      border: 2px solid #fecaca;
+      background: #fffafa;
+      border-radius: 18px;
+      overflow: hidden;
+      margin-top: 18px;
+    }
+
+    .patient-header {
+      background: #991b1b;
+      color: white;
+      padding: 16px 18px;
+    }
+
+    .patient-header h2 {
+      color: white;
+      margin: 0;
+    }
+
+    .patient-body {
+      padding: 18px;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    @media (max-width: 700px) {
+      .data-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .data-box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: white;
+    }
+
+    .data-box strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #111827;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .tag {
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      padding: 6px 9px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    details {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 14px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 15px 16px;
+      font-weight: 900;
+      background: #f8fafc;
+    }
+
+    details div {
+      padding: 0 16px 16px;
+    }
+
+    .treatment-card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      margin: 10px 0;
+      background: #ffffff;
+    }
+
+    .treatment-card h4 {
+      margin: 0 0 8px;
+      color: var(--deep-red);
+    }
+
+    .output-box {
+      width: 100%;
+      min-height: 320px;
+      background: #0f172a;
+      color: #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      font-family: Consolas, Monaco, monospace;
+      white-space: pre-wrap;
+      border: 0;
+    }
+
+    .step-number {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      background: var(--valencia-red);
+      color: white;
+      border-radius: 50%;
+      font-weight: 900;
+      margin-right: 8px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: 26px 0 10px;
+    }
+
+    .mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.95rem;
+    }
+
+    .mini-table th,
+    .mini-table td {
+      border: 1px solid var(--line);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .mini-table th {
+      background: #f8fafc;
+    }
+
+    .required {
+      color: var(--valencia-red);
+    }
+
+    .print-note {
+      display: none;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .hero,
+      .button-row,
+      .no-print,
+      .footer {
+        display: none !important;
+      }
+
+      .card,
+      .patient-file {
+        box-shadow: none;
+        break-inside: avoid;
+      }
+
+      .print-note {
+        display: block;
+      }
+    }
+  </style>
 </head>
+
 <body>
+  <div class="app">
+    <header class="hero">
+      <h1>Virtual Tumor Board</h1>
+      <p>
+        Analyze a simulated cancer case, explain how cell cycle regulation failed, and prepare a short diagnostic handoff video for your discussion post.
+      </p>
+      <div class="badge-row">
+        <span class="badge">Cell Cycle Control</span>
+        <span class="badge">Cancer Genetics</span>
+        <span class="badge">Apoptosis</span>
+        <span class="badge">Telomerase</span>
+        <span class="badge">Treatment Mechanisms</span>
+      </div>
+    </header>
 
-<div class="container">
+    <div class="grid">
+      <main>
+        <section class="card">
+          <span class="section-label">Start Here</span>
+          <h2>Your Mission</h2>
+          <p>
+            You are part of a virtual tumor board. Your task is to review a simulated patient file and record a 2-minute diagnostic pitch explaining why this patient’s cell cycle regulation failed.
+          </p>
 
-    <div id="step1" class="card">
-        <h2>📋 1. Your Tumor Board Case Assignment</h2>
-        <p>Click below to draw your assigned patient diagnostic folder. You can manually cycle through them if you want to study alternate variations.</p>
-        
-        <div class="grid">
-            <div id="btn-caseA" class="case-selector" onclick="selectCase('A')">📂 Patient #104<br><strong>Elena Vance</strong></div>
-            <div id="btn-caseB" class="case-selector" onclick="selectCase('B')">📂 Patient #208<br><strong>Marcus Chen</strong></div>
-            <div id="btn-caseC" class="case-selector" onclick="selectCase('C')">📂 Patient #312<br><strong>Dr. Aris Thorne</strong></div>
-        </div>
+          <div class="notice">
+            <strong>Important:</strong> This is a biology learning simulation, not a medical diagnosis activity. Focus on Chapter 8 concepts: checkpoints, proto-oncogenes, tumor suppressor genes, apoptosis, telomerase, chromosomal rearrangements, and cancer-cell characteristics.
+          </div>
 
-        <div id="case-display" class="hidden" style="margin-top:20px; padding-top:20px; border-top:1px dashed #cbd5e1;">
-            <h3 id="case-title">Patient Name</h3>
-            <p><strong>Clinical Profile:</strong> <span id="case-history"></span></p>
-            <p><strong>Histopathology:</strong> <span id="case-pathology"></span></p>
-            
-            <strong>Genomic Sequence Metrics:</strong>
-            <table>
-                <thead>
-                    <tr><th>Gene Symbol</th><th>Variant Status</th><th>Mechanistic Cascade Impact</th></tr>
-                </thead>
-                <tbody id="case-table-body"></tbody>
-            </table>
-            
-            <div class="step-nav">
-                <div></div>
-                <button class="btn" onclick="nextStep(2)">Begin Guided Script Generator ➔</button>
+          <details open>
+            <summary>What you will submit in the discussion</summary>
+            <div>
+              <ol>
+                <li>A 2-minute video or audio diagnostic pitch using Kaltura/MyMedia in Canvas.</li>
+                <li>Two peer consultation notes recommending a treatment mechanism for two classmates’ patient files.</li>
+              </ol>
             </div>
-        </div>
+          </details>
+
+          <details>
+            <summary>What your diagnostic pitch should explain</summary>
+            <div>
+              <ul>
+                <li>The main cell cycle control problem.</li>
+                <li>The gene or process involved.</li>
+                <li>How the mutation or abnormal result allows cells to keep dividing.</li>
+                <li>Which tumor characteristics are shown in the file.</li>
+                <li>How the case connects to cancer development.</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <section class="card">
+          <span class="section-label">Patient Simulation</span>
+          <h2>Generate Your Unique Patient File</h2>
+          <p>
+            Enter your name and a two-digit number of your choice. This will generate your assigned simulated patient file. Use the same name and number if you need to return to your case later.
+          </p>
+
+          <label for="studentName">Student name <span class="required">*</span></label>
+          <input id="studentName" type="text" placeholder="Example: Alex Rivera" />
+
+          <label for="studentCode">Two-digit code <span class="required">*</span></label>
+          <input id="studentCode" type="text" inputmode="numeric" maxlength="2" placeholder="Example: 27" />
+
+          <div class="button-row">
+            <button class="btn-primary" onclick="generatePatient()">Generate Patient File</button>
+            <button class="btn-secondary" onclick="resetApp()">Start Over</button>
+          </div>
+
+          <div id="patientFile" class="patient-file hidden"></div>
+        </section>
+
+        <section id="guidedPathway" class="card hidden">
+          <span class="section-label">Diagnostic Pitch Builder</span>
+          <h2>Build Your 2-Minute Handoff</h2>
+          <p>
+            Use these prompts to plan your video. The app will organize your notes into a handoff outline, but you are responsible for the biology explanation.
+          </p>
+
+          <label for="mainProblem"><span class="step-number">1</span>What is the main cell cycle control problem?</label>
+          <textarea id="mainProblem" placeholder="Example: The cell is not stopping at the G1 checkpoint even though DNA damage is present."></textarea>
+
+          <label for="caseEvidence"><span class="step-number">2</span>What evidence from the patient file supports your conclusion?</label>
+          <textarea id="caseEvidence" placeholder="Use at least two details from the biopsy, genetic report, or cell cycle clue."></textarea>
+
+          <label for="geneProcess"><span class="step-number">3</span>Which gene or process is most important in this case?</label>
+          <select id="geneProcess">
+            <option value="">Choose one...</option>
+            <option>Proto-oncogene</option>
+            <option>Tumor suppressor gene</option>
+            <option>Apoptosis failure</option>
+            <option>Telomerase activity</option>
+            <option>Chromosomal rearrangement</option>
+            <option>Spindle / mitosis problem</option>
+            <option>External growth signal problem</option>
+          </select>
+
+          <label for="biologyExplain"><span class="step-number">4</span>Explain how this problem allows cells to keep dividing.</label>
+          <textarea id="biologyExplain" placeholder="Explain the connection to checkpoints, cell cycle progression, mitosis, apoptosis, or telomerase."></textarea>
+
+          <label for="tumorTraits"><span class="step-number">5</span>Which characteristics of cancer cells are shown?</label>
+          <textarea id="tumorTraits" placeholder="Examples: rapid division, abnormal nuclei, ignoring stop signals, avoiding apoptosis, continued division, chromosome abnormalities."></textarea>
+
+          <label for="vocabulary"><span class="step-number">6</span>Use at least five Chapter 8 vocabulary terms.</label>
+          <textarea id="vocabulary" placeholder="Example: G1 checkpoint, tumor suppressor gene, apoptosis, mutation, telomerase"></textarea>
+
+          <label for="closingLine"><span class="step-number">7</span>Write your closing sentence.</label>
+          <textarea id="closingLine" placeholder="Example: Overall, this case shows how failure of normal cell cycle control can allow abnormal cells to survive and divide."></textarea>
+
+          <div class="button-row">
+            <button class="btn-blue" onclick="buildHandoff()">Create My Handoff Outline</button>
+            <button class="btn-green" onclick="copyText('handoffOutput')">Copy Outline</button>
+            <button class="btn-purple" onclick="downloadText('handoffOutput', 'tumor-board-handoff-outline.txt')">Download Outline</button>
+          </div>
+
+          <h3>Your Handoff Outline</h3>
+          <textarea id="handoffOutput" class="output-box" readonly placeholder="Your outline will appear here after you complete the prompts."></textarea>
+        </section>
+
+        <section class="card">
+          <span class="section-label">Kaltura / MyMedia</span>
+          <h2>How to Record and Post Your Video in Canvas</h2>
+
+          <div class="info">
+            Your course may call this tool <strong>Kaltura</strong>, <strong>My Media</strong>, or <strong>MyMedia</strong>. Use the MyMedia menu link in Canvas if your instructor has enabled it.
+          </div>
+
+          <details open>
+            <summary>Recording steps</summary>
+            <div>
+              <ol>
+                <li>Open your Canvas course.</li>
+                <li>Select the <strong>MyMedia</strong> or <strong>My Media</strong> menu link.</li>
+                <li>Select <strong>Add New</strong>.</li>
+                <li>Choose the recording option your instructor recommends, such as <strong>Kaltura Capture</strong>, webcam recording, or media upload.</li>
+                <li>Record your 2-minute tumor board handoff.</li>
+                <li>Save and upload the recording to MyMedia.</li>
+                <li>Return to the discussion post.</li>
+                <li>Use the Canvas rich content editor to embed or attach your MyMedia video according to your instructor’s directions.</li>
+              </ol>
+            </div>
+          </details>
+
+          <details>
+            <summary>Before you submit</summary>
+            <div>
+              <ul>
+                <li>Check that your video/audio plays correctly.</li>
+                <li>Make sure your patient file is identified.</li>
+                <li>Use specific evidence from your simulation.</li>
+                <li>Keep the recording close to 2 minutes.</li>
+                <li>Do not read a generic definition list. Explain the case.</li>
+              </ul>
+            </div>
+          </details>
+        </section>
+      </main>
+
+      <aside>
+        <section class="card">
+          <span class="section-label">Vocabulary Bank</span>
+          <h2>Chapter 8 Terms</h2>
+          <div class="tag-list">
+            <span class="tag">Cell cycle</span>
+            <span class="tag">Interphase</span>
+            <span class="tag">G1 checkpoint</span>
+            <span class="tag">G2 checkpoint</span>
+            <span class="tag">M checkpoint</span>
+            <span class="tag">Mitosis</span>
+            <span class="tag">Sister chromatids</span>
+            <span class="tag">Spindle fibers</span>
+            <span class="tag">Cytokinesis</span>
+            <span class="tag">Proto-oncogene</span>
+            <span class="tag">Tumor suppressor gene</span>
+            <span class="tag">Apoptosis</span>
+            <span class="tag">Telomerase</span>
+            <span class="tag">Mutation</span>
+            <span class="tag">Chromosomal rearrangement</span>
+            <span class="tag">Growth factor</span>
+            <span class="tag">Internal signal</span>
+            <span class="tag">External signal</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <span class="section-label">Peer Replies</span>
+          <h2>Treatment Debate Builder</h2>
+          <p>
+            Use this section after watching or listening to a classmate’s diagnostic pitch.
+          </p>
+
+          <label for="peerCase">Patient file reviewed</label>
+          <input id="peerCase" type="text" placeholder="Example: Patient File C: Apoptosis Escape" />
+
+          <label for="peerEvidence">Evidence from peer’s case</label>
+          <textarea id="peerEvidence" placeholder="Use at least two details from the peer’s video or patient file."></textarea>
+
+          <label for="treatmentChoice">Recommended treatment mechanism</label>
+          <select id="treatmentChoice">
+            <option value="">Choose one...</option>
+            <option value="Option 1: Taxane-Based Chemotherapy">Option 1: Taxane-Based Chemotherapy</option>
+            <option value="Option 2: BH3 Mimetics">Option 2: BH3 Mimetics</option>
+            <option value="Option 3: Telomerase Inhibitor Agents">Option 3: Telomerase Inhibitor Agents</option>
+            <option value="Option 4: Radiation Therapy">Option 4: Radiation Therapy</option>
+            <option value="Option 5: Targeted Growth-Signal Therapy">Option 5: Targeted Growth-Signal Therapy</option>
+            <option value="Option 6: Immunotherapy">Option 6: Immunotherapy</option>
+            <option value="Option 7: Cell Cycle Inhibitor">Option 7: Cell Cycle Inhibitor</option>
+          </select>
+
+          <label for="treatmentReason">Why does this treatment fit?</label>
+          <textarea id="treatmentReason" placeholder="Explain how the treatment could slow division, trigger apoptosis, damage DNA, or reduce cancer-cell survival."></textarea>
+
+          <label for="boardQuestion">Tumor board follow-up question</label>
+          <textarea id="boardQuestion" placeholder="Ask one thoughtful follow-up question."></textarea>
+
+          <div class="button-row">
+            <button class="btn-blue" onclick="buildConsultNote()">Create Consultation Note</button>
+            <button class="btn-green" onclick="copyText('consultOutput')">Copy Note</button>
+          </div>
+
+          <h3>Consultation Note</h3>
+          <textarea id="consultOutput" class="output-box" readonly placeholder="Your consultation note will appear here."></textarea>
+        </section>
+
+        <section class="card">
+          <span class="section-label">Treatment Menu</span>
+          <h2>Mechanism Options</h2>
+
+          <div class="treatment-card">
+            <h4>Option 1: Taxane-Based Chemotherapy</h4>
+            <p><strong>Mechanism:</strong> Stabilizes microtubules and disrupts normal spindle function during mitosis.</p>
+            <p><strong>Best fit:</strong> Rapid mitosis, many dividing cells, or mitosis/spindle-related problems.</p>
+          </div>
+
+          <div class="treatment-card">
+            <h4>Option 2: BH3 Mimetics</h4>
+            <p><strong>Mechanism:</strong> Inhibits anti-apoptotic BCL-2 proteins, allowing damaged cells to trigger apoptosis.</p>
+            <p><strong>Best fit:</strong> High BCL-2, low apoptosis, or damaged cells surviving when they should die.</p>
+          </div>
+
+          <div class="treatment-card">
+            <h4>Option 3: Telomerase Inhibitor Agents</h4>
+            <p><strong>Mechanism:</strong> Blocks telomerase from maintaining chromosome ends.</p>
+            <p><strong>Best fit:</strong> Very high telomerase activity or cells avoiding the normal division limit.</p>
+          </div>
+
+          <div class="treatment-card">
+            <h4>Option 4: Radiation Therapy</h4>
+            <p><strong>Mechanism:</strong> Damages DNA in cancer cells.</p>
+            <p><strong>Best fit:</strong> DNA damage vulnerability or localized tumor growth.</p>
+          </div>
+
+          <div class="treatment-card">
+            <h4>Option 5: Targeted Growth-Signal Therapy</h4>
+            <p><strong>Mechanism:</strong> Blocks overactive growth signaling from an abnormal proto-oncogene.</p>
+            <p><strong>Best fit:</strong> Overactive HER2 or similar growth-signal pathway.</p>
+          </div>
+
+          <div class="treatment-card">
+            <h4>Option 6: Immunotherapy</h4>
+            <p><strong>Mechanism:</strong> Helps the immune system recognize or attack cancer cells.</p>
+            <p><strong>Best fit:</strong> Tumors with many mutations or abnormal cells avoiding immune detection.</p>
+          </div>
+
+          <div class="treatment-card">
+            <h4>Option 7: Cell Cycle Inhibitor</h4>
+            <p><strong>Mechanism:</strong> Slows movement through key parts of the cell cycle, especially G1 into S phase.</p>
+            <p><strong>Best fit:</strong> Failed cell cycle brakes or cells entering DNA replication too easily.</p>
+          </div>
+        </section>
+      </aside>
     </div>
 
-    <div id="step2" class="card hidden">
-        <h2>✍️ 2. Presentation Blueprint Builder</h2>
-        <p>Draft your required 2-minute clinical breakdown. Your text responses will remain cached inside this application panel so you can comfortably practice reading aloud before you film.</p>
-        
-        <div class="grid" style="grid-template-columns: 1fr;">
-            <div>
-                <label><strong>Section A: The Biomarker Classification (First 30 seconds)</strong><br>
-                Identify the mutated genes from your folder. Are they Proto-oncogenes or Tumor Suppressors? What is their default role in a healthy cell?</label>
-                <textarea id="prompt1" placeholder="e.g., In Case #104, Patient Elena Vance presents with a mutated TP53 gene..."></textarea>
-            </div>
-            <div>
-                <label><strong>Section B: Checkpoint & Apoptosis Failure (Next 45 seconds)</strong><br>
-                Which cell cycle control checkpoint was bypassed ($G_1$, $G_2$, or M Phase)? Why did the cell fail to trigger normal apoptotic pathways?</label>
-                <textarea id="prompt2" placeholder="e.g., Because p53 is completely non-functional, the cell bypasses the G1 checkpoint without repairing DNA anomalies..."></textarea>
-            </div>
-            <div>
-                <label><strong>Section C: Phenotypic Properties (Final 45 seconds)</strong><br>
-                Connect your laboratory pathology notes (e.g., lack of contact inhibition, anchorage independence, or angiogenesis) to actual cancer cell behaviors.</label>
-                <textarea id="prompt3" placeholder="e.g., Under the microscope, we clearly see a lack of contact inhibition, meaning these respiratory cells..."></textarea>
-            </div>
-        </div>
+    <section class="card">
+      <span class="section-label">Quick Rubric</span>
+      <h2>Criteria for Success</h2>
+      <table class="mini-table">
+        <thead>
+          <tr>
+            <th>Part</th>
+            <th>Strong work includes...</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Diagnostic Pitch</td>
+            <td>Identifies the main cell cycle failure, uses patient-file evidence, explains the gene/process involved, connects results to cancer-cell characteristics, and uses Chapter 8 vocabulary correctly.</td>
+          </tr>
+          <tr>
+            <td>Consultation Notes</td>
+            <td>Recommends a treatment mechanism that fits the peer’s case, uses peer-specific evidence, explains the cell cycle connection, and asks a thoughtful tumor board question.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
 
-        <div class="step-nav">
-            <button class="btn btn-secondary" onclick="nextStep(1)">Back to Profile</button>
-            <button class="btn" onclick="nextStep(3)">Go to Recording Instructions ➔</button>
-        </div>
-    </div>
+    <p class="footer">
+      Virtual Tumor Board Simulation | Chapter 8: Cellular Reproduction, Cell Cycle Control, and Cancer
+    </p>
+  </div>
 
-    <div id="step3" class="card hidden">
-        <h2>🎥 3. How to Record & Embed via Kaltura</h2>
-        <p>Do not upload raw `.mp4` or `.mov` files directly to the discussion dashboard—they overload Canvas. Instead, use the integrated institutional streaming server, <strong>Kaltura ("My Media")</strong>.</p>
-        
-        <div class="alert">
-            <strong>💡 Performance Tip:</strong> Resize this window side-by-side with your outline text from Step 2 to practice your delivery without script-reading!
-        </div>
+  <script>
+    const patientCases = [
+      {
+        title: "Patient File A: Checkpoint Failure After DNA Damage",
+        lifestyle: "Works outdoors frequently and reports many severe sunburns earlier in life.",
+        biopsy: "Many cells show enlarged nuclei, abnormal chromosome appearance, and high numbers of cells in mitosis.",
+        genetic: [
+          "p53 tumor suppressor gene: loss-of-function mutation",
+          "Telomerase activity: mildly increased",
+          "Apoptosis markers: low"
+        ],
+        clue: "Cells continue past the G1 checkpoint even when DNA damage is present.",
+        findings: ["DNA damage", "G1 checkpoint failure", "Low apoptosis", "Abnormal chromosomes"]
+      },
+      {
+        title: "Patient File B: Overactive Growth Signal",
+        lifestyle: "No major lifestyle risk factor identified in this file.",
+        biopsy: "Tumor cells are tightly packed, dividing rapidly, and responding strongly to growth signals.",
+        genetic: [
+          "HER2 proto-oncogene: amplified",
+          "p53 tumor suppressor gene: normal",
+          "Telomerase activity: moderate"
+        ],
+        clue: "Cells enter the cell cycle even when normal external growth signals should be limited.",
+        findings: ["Proto-oncogene amplification", "Rapid division", "External signal problem", "Crowded cell growth"]
+      },
+      {
+        title: "Patient File C: Apoptosis Escape",
+        lifestyle: "No major environmental exposure identified in this file.",
+        biopsy: "Many abnormal cells survive despite severe internal damage. Few cells show programmed cell death.",
+        genetic: [
+          "BCL-2 protein: overproduced",
+          "p53 tumor suppressor gene: normal",
+          "Apoptosis markers: very low"
+        ],
+        clue: "Cells that should self-destruct are surviving.",
+        findings: ["Apoptosis failure", "High BCL-2", "Low programmed cell death", "Survival of damaged cells"]
+      },
+      {
+        title: "Patient File D: Cellular Immortality Pattern",
+        lifestyle: "Family history includes several cancers diagnosed later in life.",
+        biopsy: "Tumor cells have divided many times but still show strong survival and continued growth.",
+        genetic: [
+          "Telomerase activity: very high",
+          "p53 tumor suppressor gene: normal",
+          "Apoptosis markers: moderate"
+        ],
+        clue: "Cells are avoiding the usual division limit.",
+        findings: ["High telomerase", "Continued division", "Chromosome-end maintenance", "Cellular immortality pattern"]
+      },
+      {
+        title: "Patient File E: Chromosomal Rearrangement",
+        lifestyle: "No major lifestyle risk factor identified in this file.",
+        biopsy: "Cells show abnormal chromosomes and unusually rapid production of new abnormal cells.",
+        genetic: [
+          "Chromosomal translocation detected",
+          "Growth-control gene placed near an overactive promoter",
+          "Telomerase activity: moderate"
+        ],
+        clue: "A rearranged chromosome causes constant cell-division signaling.",
+        findings: ["Chromosomal translocation", "Abnormal gene regulation", "Rapid division", "Abnormal chromosomes"]
+      },
+      {
+        title: "Patient File F: Failed Cell Cycle Brake",
+        lifestyle: "Reports long-term exposure to tobacco smoke.",
+        biopsy: "Cells divide despite crowding and show reduced response to normal stop signals.",
+        genetic: [
+          "Rb tumor suppressor pathway: inactive",
+          "p53 tumor suppressor gene: partially functional",
+          "Apoptosis markers: moderate"
+        ],
+        clue: "Cells pass from G1 into S phase too easily.",
+        findings: ["Failed G1/S brake", "Tumor suppressor pathway problem", "Reduced stop signals", "Crowded growth"]
+      },
+      {
+        title: "Patient File G: Mitosis Control Problem",
+        lifestyle: "No major lifestyle risk factor identified in this file.",
+        biopsy: "Cells show many mitotic figures and unequal chromosome distribution after division.",
+        genetic: [
+          "Spindle checkpoint protein: reduced function",
+          "p53 tumor suppressor gene: normal",
+          "Telomerase activity: moderate"
+        ],
+        clue: "Cells continue through mitosis even when chromosomes are not properly attached to spindle fibers.",
+        findings: ["M checkpoint problem", "Spindle attachment issue", "Unequal chromosome distribution", "Mitosis error"]
+      },
+      {
+        title: "Patient File H: Multiple-Hit Cancer Pattern",
+        lifestyle: "Reports long-term exposure to tobacco smoke and limited physical activity.",
+        biopsy: "Tumor cells show abnormal nuclei, rapid division, low apoptosis, and reduced response to stop signals.",
+        genetic: [
+          "p53 tumor suppressor gene: loss-of-function mutation",
+          "Growth signaling pathway: overactive",
+          "Telomerase activity: high"
+        ],
+        clue: "Several control systems have failed at the same time.",
+        findings: ["Tumor suppressor mutation", "Overactive growth signaling", "High telomerase", "Low apoptosis"]
+      }
+    ];
 
-        <ol>
-            <li>Look at the far left global navigation sidebar in Canvas and click on your <strong>Account</strong> icon, then select <strong>My Media</strong>.</li>
-            <li>Near the top right corner of your video library, click the blue <strong>+ Add New</strong> button and choose <strong>Express Capture</strong> (or <em>Record in Browser</em>).</li>
-            <li>Grant your web browser microphone and camera access permissions, click the red button, deliver your structured briefing, and click <strong>Stop Recording</strong>.</li>
-            <li>Select <strong>Use This</strong> to upload it, rename your file (e.g., <code>Bio101_TumorBoard_CaseA</code>), and hit <strong>Save</strong>.</li>
-            <li>Return to this Discussion page, click the <strong>Reply</strong> textbox to bring up the text editor toolbar, and click the <strong>Embed Kaltura Media</strong> icon (it looks like a multi-colored starburst/wheel spoke).</li>
-            <li>Find your recorded briefing in the list and click the <strong>Embed</strong> button next to it.</li>
-        </ol>
+    let activePatient = null;
 
-        <div class="step-nav">
-            <button class="btn btn-secondary" onclick="nextStep(2)">Back to Script Builder</button>
-            <button class="btn" onclick="resetSim()" style="background-color: var(--accent);">Reset Interactive App</button>
-        </div>
-    </div>
-
-</div>
-
-<script>
-    const cases = {
-        A: {
-            title: "Patient File #104-EV (Elena Vance)",
-            history: "Age 62, Female. Presented with persistent chronic cough. Significant structural mass identified in right lung. History includes 35 years of chronic environmental smoke exposure.",
-            pathology: "High mitotic activity. Tumors exhibit a structural loss of contact inhibition (cells aggressively aggregate in thick vertical stacks rather than singular arrays).",
-            table: [
-                ["TP53", "Mutated (Loss of Function)", "Inactivated p53 framework. Cell completely lacks the regulatory capability to halt the cycle at the G1 line or initiate apoptosis cascades."],
-                ["TERT", "Mutated (Gain of Function)", "Promoter region hyperactivation. Telomerase expression remains permanently turned ON, preventing chromosome degradation."],
-                ["HER2", "Normal (Wild-Type)", "Standard expression pattern; cellular replication signaling functions normally."]
-            ]
-        },
-        B: {
-            title: "Patient File #208-MC (Marcus Chen)",
-            history: "Age 45, Male. Presented with acute gastrointestinal bleeding. Core colonoscopy confirmed an active adenocarcinoma mass. Sedentary background with high dietary consumption of red meat products.",
-            pathology: "Cells display clear anchorage independence (tumor elements continue to proliferate actively within fluid microenvironments without base membrane adhesion).",
-            table: [
-                ["KRAS", "Mutated (Gain of Function)", "Protein structural loop is permanently locked in an active signaling configuration; perpetually broadcasts growth commands to the nucleus."],
-                ["APC", "Mutated (Loss of Function)", "Deletions cause a failure to break down signaling factors. Cells ignore growth boundary restrictions."],
-                ["RB1", "Normal (Wild-Type)", "Retinoblastoma nuclear path functions within baseline ranges."]
-            ]
-        },
-        C: {
-            title: "Patient File #312-AT (Dr. Aris Thorne)",
-            history: "Age 29, Non-binary. Palpable mass localized in the left inguinal lymph node. Patient reports a history of frequent severe blistering sunburns during childhood without protective screen application.",
-            pathology: "Angiogenesis Positive. Microvascular structures show a heavy directional branching pattern growing straight into the core of the dense tumor mass. Microscopic array shows cross-chromosomal rearrangements.",
-            table: [
-                ["BCL-2", "Overexpressed (Translocation)", "Massive structural accumulation of protective proteins; completely walls off and blocks the default mitochondrial chemical signals for apoptosis."],
-                ["MYC", "Overexpressed (Translocation)", "Transcription factor levels are abnormally high, driving rapid acceleration through cell cycle boundaries."],
-                ["TP53", "Normal (Wild-Type)", "Genomic protection sequencing is functional, but downstream effects are bypassed by high BCL-2 levels."]
-            ]
-        }
-    };
-
-    function selectCase(letter) {
-        document.querySelectorAll('.case-selector').forEach(el => el.classList.remove('active'));
-        document.getElementById(`btn-case${letter}`).classList.add('active');
-        
-        const data = cases[letter];
-        document.getElementById('case-title').innerText = data.title;
-        document.getElementById('case-history').innerText = data.history;
-        document.getElementById('case-pathology').innerText = data.pathology;
-        
-        let tbody = '';
-        data.table.forEach(row => {
-            tbody += `<tr><td><strong>${row[0]}</strong></td><td><span style="color:var(--accent); font-weight:bold;">${row[1]}</span></td><td>${row[2]}</td></tr>`;
-        });
-        document.getElementById('case-table-body').innerHTML = tbody;
-        document.getElementById('case-display').classList.remove('hidden');
+    function simpleHash(text) {
+      let hash = 0;
+      for (let i = 0; i < text.length; i++) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(i);
+        hash |= 0;
+      }
+      return Math.abs(hash);
     }
 
-    function nextStep(stepNum) {
-        document.getElementById('step1').classList.add('hidden');
-        document.getElementById('step2').classList.add('hidden');
-        document.getElementById('step3').classList.add('hidden');
-        document.getElementById(`step${stepNum}`).classList.remove('hidden');
-        window.scrollTo(0,0);
+    function generatePatient() {
+      const name = document.getElementById("studentName").value.trim();
+      const code = document.getElementById("studentCode").value.trim();
+
+      if (!name || !code) {
+        alert("Please enter your name and a two-digit code before generating your patient file.");
+        return;
+      }
+
+      if (!/^[0-9]{2}$/.test(code)) {
+        alert("Please enter exactly two digits for your code, such as 04, 18, or 72.");
+        return;
+      }
+
+      const hash = simpleHash(name.toLowerCase() + "-" + code);
+      const patientIndex = hash % patientCases.length;
+      activePatient = patientCases[patientIndex];
+
+      const patientDiv = document.getElementById("patientFile");
+      patientDiv.classList.remove("hidden");
+
+      patientDiv.innerHTML = `
+        <div class="patient-header">
+          <h2>${activePatient.title}</h2>
+          <p style="margin:6px 0 0;">Assigned to: ${escapeHTML(name)} | Simulation Code: ${escapeHTML(code)}</p>
+        </div>
+        <div class="patient-body">
+          <div class="data-grid">
+            <div class="data-box">
+              <strong>Lifestyle History</strong>
+              ${activePatient.lifestyle}
+            </div>
+            <div class="data-box">
+              <strong>Biopsy Findings</strong>
+              ${activePatient.biopsy}
+            </div>
+            <div class="data-box">
+              <strong>Genetic Sequencing Report</strong>
+              <ul>${activePatient.genetic.map(item => `<li>${item}</li>`).join("")}</ul>
+            </div>
+            <div class="data-box">
+              <strong>Cell Cycle Clue</strong>
+              ${activePatient.clue}
+            </div>
+          </div>
+
+          <h3>Data Tags</h3>
+          <div class="tag-list">
+            ${activePatient.findings.map(item => `<span class="tag">${item}</span>`).join("")}
+          </div>
+
+          <div class="success">
+            <strong>Next step:</strong> Use the Diagnostic Pitch Builder below to interpret your case. Do not just read the patient file in your video. Explain what went wrong biologically.
+          </div>
+        </div>
+      `;
+
+      document.getElementById("guidedPathway").classList.remove("hidden");
+      document.getElementById("guidedPathway").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    function resetSim() {
-        document.querySelectorAll('.case-selector').forEach(el => el.classList.remove('active'));
-        document.getElementById('case-display').classList.add('hidden');
-        document.getElementById('prompt1').value = '';
-        document.getElementById('prompt2').value = '';
-        document.getElementById('prompt3').value = '';
-        nextStep(1);
-    }
-</script>
+    function buildHandoff() {
+      if (!activePatient) {
+        alert("Please generate your patient file first.");
+        return;
+      }
 
+      const name = document.getElementById("studentName").value.trim();
+      const code = document.getElementById("studentCode").value.trim();
+
+      const mainProblem = document.getElementById("mainProblem").value.trim();
+      const caseEvidence = document.getElementById("caseEvidence").value.trim();
+      const geneProcess = document.getElementById("geneProcess").value.trim();
+      const biologyExplain = document.getElementById("biologyExplain").value.trim();
+      const tumorTraits = document.getElementById("tumorTraits").value.trim();
+      const vocabulary = document.getElementById("vocabulary").value.trim();
+      const closingLine = document.getElementById("closingLine").value.trim();
+
+      const output =
+`VIRTUAL TUMOR BOARD HANDOFF OUTLINE
+
+Student: ${name}
+Simulation Code: ${code}
+Assigned Case: ${activePatient.title}
+
+Opening:
+Today I am presenting ${activePatient.title}. This is a simulated cancer case focused on cell cycle regulation.
+
+1. Main Cell Cycle Control Problem
+${mainProblem || "[Add your explanation here.]"}
+
+2. Evidence From Patient File
+${caseEvidence || "[Add at least two specific details from the patient file.]"}
+
+Patient-file details to consider:
+- Lifestyle history: ${activePatient.lifestyle}
+- Biopsy findings: ${activePatient.biopsy}
+- Genetic report: ${activePatient.genetic.join("; ")}
+- Cell cycle clue: ${activePatient.clue}
+
+3. Gene or Cell Process Involved
+${geneProcess || "[Choose and explain the gene/process involved.]"}
+
+4. Biology Explanation
+${biologyExplain || "[Explain how this problem affects checkpoints, mitosis, apoptosis, telomerase, or cell cycle progression.]"}
+
+5. Cancer-Cell Characteristics
+${tumorTraits || "[Identify the cancer-cell characteristics shown in this case.]"}
+
+6. Chapter 8 Vocabulary I Plan to Use
+${vocabulary || "[List at least five Chapter 8 vocabulary terms.]"}
+
+Closing:
+${closingLine || "[Write a final sentence connecting this case to cancer development.]"}
+
+Reminder:
+Your video/audio should be close to 2 minutes. Use this as a planning guide, but speak naturally and explain the biology in your own words.`;
+
+      document.getElementById("handoffOutput").value = output;
+    }
+
+    function buildConsultNote() {
+      const peerCase = document.getElementById("peerCase").value.trim();
+      const peerEvidence = document.getElementById("peerEvidence").value.trim();
+      const treatmentChoice = document.getElementById("treatmentChoice").value.trim();
+      const treatmentReason = document.getElementById("treatmentReason").value.trim();
+      const boardQuestion = document.getElementById("boardQuestion").value.trim();
+
+      const output =
+`TUMOR BOARD CONSULTATION NOTE
+
+Patient File Reviewed:
+${peerCase || "[Identify your peer's patient file.]"}
+
+Recommended Treatment Option:
+${treatmentChoice || "[Choose one treatment option from the menu.]"}
+
+Reason for Recommendation:
+${peerEvidence || "[Use at least two pieces of evidence from your peer's case or video.]"}
+
+Cell Cycle Connection:
+${treatmentReason || "[Explain how this treatment mechanism connects to the faulty cell cycle, apoptosis, mitosis, telomerase, DNA damage, or cancer-cell survival.]"}
+
+Tumor Board Follow-Up Question:
+${boardQuestion || "[Ask one thoughtful follow-up question.]"}
+
+Reminder:
+Your reply should be specific to your peer's case. Avoid generic comments such as “good job” or “chemotherapy kills cancer cells.”`;
+
+      document.getElementById("consultOutput").value = output;
+    }
+
+    function copyText(id) {
+      const textArea = document.getElementById(id);
+      if (!textArea.value.trim()) {
+        alert("There is nothing to copy yet.");
+        return;
+      }
+
+      textArea.focus();
+      textArea.select();
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textArea.value)
+          .then(() => alert("Copied!"))
+          .catch(() => {
+            document.execCommand("copy");
+            alert("Copied!");
+          });
+      } else {
+        document.execCommand("copy");
+        alert("Copied!");
+      }
+    }
+
+    function downloadText(id, filename) {
+      const text = document.getElementById(id).value;
+      if (!text.trim()) {
+        alert("There is nothing to download yet.");
+        return;
+      }
+
+      const blob = new Blob([text], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function resetApp() {
+      const confirmReset = confirm("Start over? This will clear your current entries.");
+      if (!confirmReset) return;
+
+      activePatient = null;
+
+      const idsToClear = [
+        "studentName",
+        "studentCode",
+        "mainProblem",
+        "caseEvidence",
+        "geneProcess",
+        "biologyExplain",
+        "tumorTraits",
+        "vocabulary",
+        "closingLine",
+        "handoffOutput",
+        "peerCase",
+        "peerEvidence",
+        "treatmentChoice",
+        "treatmentReason",
+        "boardQuestion",
+        "consultOutput"
+      ];
+
+      idsToClear.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+
+      document.getElementById("patientFile").classList.add("hidden");
+      document.getElementById("patientFile").innerHTML = "";
+      document.getElementById("guidedPathway").classList.add("hidden");
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>"']/g, function(match) {
+        const map = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+        };
+        return map[match];
+      });
+    }
+  </script>
 </body>
 </html>
