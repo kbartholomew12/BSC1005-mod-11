@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tumor Board Simulation Interactive Guide</title>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #0d9488;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+            --accent: #e11d48;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        h2 { color: var(--primary); margin-top: 0; display: flex; align-items: center; gap: 8px; }
+        h3 { color: var(--secondary); margin-top: 0; }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover { background-color: #172554; }
+        .btn-secondary { background-color: var(--secondary); }
+        .btn-secondary:hover { background-color: #115e59; }
+
+        .grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 15px; }
+        @media(min-width: 600px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+        .case-selector {
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            background: #f1f5f9;
+        }
+        .case-selector.active {
+            border-color: var(--secondary);
+            background: #f0fdfa;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9rem;
+        }
+        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+        th { background-color: #f1f5f9; }
+
+        textarea {
+            width: 100%;
+            height: 80px;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            resize: vertical;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .step-nav { display: flex; justify-content: space-between; margin-top: 20px; }
+        .hidden { display: none; }
+        .alert { background: #fff1f2; border-left: 4px solid var(--accent); padding: 12px; border-radius: 4px; }
+        
+        ol { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div id="step1" class="card">
+        <h2>📋 1. Your Tumor Board Case Assignment</h2>
+        <p>Click below to draw your assigned patient diagnostic folder. You can manually cycle through them if you want to study alternate variations.</p>
+        
+        <div class="grid">
+            <div id="btn-caseA" class="case-selector" onclick="selectCase('A')">📂 Patient #104<br><strong>Elena Vance</strong></div>
+            <div id="btn-caseB" class="case-selector" onclick="selectCase('B')">📂 Patient #208<br><strong>Marcus Chen</strong></div>
+            <div id="btn-caseC" class="case-selector" onclick="selectCase('C')">📂 Patient #312<br><strong>Dr. Aris Thorne</strong></div>
+        </div>
+
+        <div id="case-display" class="hidden" style="margin-top:20px; padding-top:20px; border-top:1px dashed #cbd5e1;">
+            <h3 id="case-title">Patient Name</h3>
+            <p><strong>Clinical Profile:</strong> <span id="case-history"></span></p>
+            <p><strong>Histopathology:</strong> <span id="case-pathology"></span></p>
+            
+            <strong>Genomic Sequence Metrics:</strong>
+            <table>
+                <thead>
+                    <tr><th>Gene Symbol</th><th>Variant Status</th><th>Mechanistic Cascade Impact</th></tr>
+                </thead>
+                <tbody id="case-table-body"></tbody>
+            </table>
+            
+            <div class="step-nav">
+                <div></div>
+                <button class="btn" onclick="nextStep(2)">Begin Guided Script Generator ➔</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="step2" class="card hidden">
+        <h2>✍️ 2. Presentation Blueprint Builder</h2>
+        <p>Draft your required 2-minute clinical breakdown. Your text responses will remain cached inside this application panel so you can comfortably practice reading aloud before you film.</p>
+        
+        <div class="grid" style="grid-template-columns: 1fr;">
+            <div>
+                <label><strong>Section A: The Biomarker Classification (First 30 seconds)</strong><br>
+                Identify the mutated genes from your folder. Are they Proto-oncogenes or Tumor Suppressors? What is their default role in a healthy cell?</label>
+                <textarea id="prompt1" placeholder="e.g., In Case #104, Patient Elena Vance presents with a mutated TP53 gene..."></textarea>
+            </div>
+            <div>
+                <label><strong>Section B: Checkpoint & Apoptosis Failure (Next 45 seconds)</strong><br>
+                Which cell cycle control checkpoint was bypassed ($G_1$, $G_2$, or M Phase)? Why did the cell fail to trigger normal apoptotic pathways?</label>
+                <textarea id="prompt2" placeholder="e.g., Because p53 is completely non-functional, the cell bypasses the G1 checkpoint without repairing DNA anomalies..."></textarea>
+            </div>
+            <div>
+                <label><strong>Section C: Phenotypic Properties (Final 45 seconds)</strong><br>
+                Connect your laboratory pathology notes (e.g., lack of contact inhibition, anchorage independence, or angiogenesis) to actual cancer cell behaviors.</label>
+                <textarea id="prompt3" placeholder="e.g., Under the microscope, we clearly see a lack of contact inhibition, meaning these respiratory cells..."></textarea>
+            </div>
+        </div>
+
+        <div class="step-nav">
+            <button class="btn btn-secondary" onclick="nextStep(1)">Back to Profile</button>
+            <button class="btn" onclick="nextStep(3)">Go to Recording Instructions ➔</button>
+        </div>
+    </div>
+
+    <div id="step3" class="card hidden">
+        <h2>🎥 3. How to Record & Embed via Kaltura</h2>
+        <p>Do not upload raw `.mp4` or `.mov` files directly to the discussion dashboard—they overload Canvas. Instead, use the integrated institutional streaming server, <strong>Kaltura ("My Media")</strong>.</p>
+        
+        <div class="alert">
+            <strong>💡 Performance Tip:</strong> Resize this window side-by-side with your outline text from Step 2 to practice your delivery without script-reading!
+        </div>
+
+        <ol>
+            <li>Look at the far left global navigation sidebar in Canvas and click on your <strong>Account</strong> icon, then select <strong>My Media</strong>.</li>
+            <li>Near the top right corner of your video library, click the blue <strong>+ Add New</strong> button and choose <strong>Express Capture</strong> (or <em>Record in Browser</em>).</li>
+            <li>Grant your web browser microphone and camera access permissions, click the red button, deliver your structured briefing, and click <strong>Stop Recording</strong>.</li>
+            <li>Select <strong>Use This</strong> to upload it, rename your file (e.g., <code>Bio101_TumorBoard_CaseA</code>), and hit <strong>Save</strong>.</li>
+            <li>Return to this Discussion page, click the <strong>Reply</strong> textbox to bring up the text editor toolbar, and click the <strong>Embed Kaltura Media</strong> icon (it looks like a multi-colored starburst/wheel spoke).</li>
+            <li>Find your recorded briefing in the list and click the <strong>Embed</strong> button next to it.</li>
+        </ol>
+
+        <div class="step-nav">
+            <button class="btn btn-secondary" onclick="nextStep(2)">Back to Script Builder</button>
+            <button class="btn" onclick="resetSim()" style="background-color: var(--accent);">Reset Interactive App</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const cases = {
+        A: {
+            title: "Patient File #104-EV (Elena Vance)",
+            history: "Age 62, Female. Presented with persistent chronic cough. Significant structural mass identified in right lung. History includes 35 years of chronic environmental smoke exposure.",
+            pathology: "High mitotic activity. Tumors exhibit a structural loss of contact inhibition (cells aggressively aggregate in thick vertical stacks rather than singular arrays).",
+            table: [
+                ["TP53", "Mutated (Loss of Function)", "Inactivated p53 framework. Cell completely lacks the regulatory capability to halt the cycle at the G1 line or initiate apoptosis cascades."],
+                ["TERT", "Mutated (Gain of Function)", "Promoter region hyperactivation. Telomerase expression remains permanently turned ON, preventing chromosome degradation."],
+                ["HER2", "Normal (Wild-Type)", "Standard expression pattern; cellular replication signaling functions normally."]
+            ]
+        },
+        B: {
+            title: "Patient File #208-MC (Marcus Chen)",
+            history: "Age 45, Male. Presented with acute gastrointestinal bleeding. Core colonoscopy confirmed an active adenocarcinoma mass. Sedentary background with high dietary consumption of red meat products.",
+            pathology: "Cells display clear anchorage independence (tumor elements continue to proliferate actively within fluid microenvironments without base membrane adhesion).",
+            table: [
+                ["KRAS", "Mutated (Gain of Function)", "Protein structural loop is permanently locked in an active signaling configuration; perpetually broadcasts growth commands to the nucleus."],
+                ["APC", "Mutated (Loss of Function)", "Deletions cause a failure to break down signaling factors. Cells ignore growth boundary restrictions."],
+                ["RB1", "Normal (Wild-Type)", "Retinoblastoma nuclear path functions within baseline ranges."]
+            ]
+        },
+        C: {
+            title: "Patient File #312-AT (Dr. Aris Thorne)",
+            history: "Age 29, Non-binary. Palpable mass localized in the left inguinal lymph node. Patient reports a history of frequent severe blistering sunburns during childhood without protective screen application.",
+            pathology: "Angiogenesis Positive. Microvascular structures show a heavy directional branching pattern growing straight into the core of the dense tumor mass. Microscopic array shows cross-chromosomal rearrangements.",
+            table: [
+                ["BCL-2", "Overexpressed (Translocation)", "Massive structural accumulation of protective proteins; completely walls off and blocks the default mitochondrial chemical signals for apoptosis."],
+                ["MYC", "Overexpressed (Translocation)", "Transcription factor levels are abnormally high, driving rapid acceleration through cell cycle boundaries."],
+                ["TP53", "Normal (Wild-Type)", "Genomic protection sequencing is functional, but downstream effects are bypassed by high BCL-2 levels."]
+            ]
+        }
+    };
+
+    function selectCase(letter) {
+        document.querySelectorAll('.case-selector').forEach(el => el.classList.remove('active'));
+        document.getElementById(`btn-case${letter}`).classList.add('active');
+        
+        const data = cases[letter];
+        document.getElementById('case-title').innerText = data.title;
+        document.getElementById('case-history').innerText = data.history;
+        document.getElementById('case-pathology').innerText = data.pathology;
+        
+        let tbody = '';
+        data.table.forEach(row => {
+            tbody += `<tr><td><strong>${row[0]}</strong></td><td><span style="color:var(--accent); font-weight:bold;">${row[1]}</span></td><td>${row[2]}</td></tr>`;
+        });
+        document.getElementById('case-table-body').innerHTML = tbody;
+        document.getElementById('case-display').classList.remove('hidden');
+    }
+
+    function nextStep(stepNum) {
+        document.getElementById('step1').classList.add('hidden');
+        document.getElementById('step2').classList.add('hidden');
+        document.getElementById('step3').classList.add('hidden');
+        document.getElementById(`step${stepNum}`).classList.remove('hidden');
+        window.scrollTo(0,0);
+    }
+
+    function resetSim() {
+        document.querySelectorAll('.case-selector').forEach(el => el.classList.remove('active'));
+        document.getElementById('case-display').classList.add('hidden');
+        document.getElementById('prompt1').value = '';
+        document.getElementById('prompt2').value = '';
+        document.getElementById('prompt3').value = '';
+        nextStep(1);
+    }
+</script>
+
+</body>
+</html>
