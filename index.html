@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gene Expression Remix: Tune the Cell</title>
+  <meta name="description" content="An interactive gene regulation simulation for introductory biology." />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root{
+      --red:#a6192e;
+      --red-dark:#741020;
+      --gold:#ffc72c;
+      --ink:#1f2937;
+      --muted:#5f6b7a;
+      --paper:#ffffff;
+      --soft:#f5f7fa;
+      --line:#d8dee8;
+      --good:#176b45;
+      --warn:#8a4b00;
+      --bad:#9f1d2d;
+      --blue:#1f5c8f;
+      --shadow:0 14px 36px rgba(31,41,55,.12);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--ink);
+      background:linear-gradient(180deg,#f9fafc 0%,#eef2f6 100%);
+      line-height:1.55;
+    }
+    button,input,textarea{font:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{
+      outline:4px solid rgba(31,92,143,.28);
+      outline-offset:3px;
+    }
+    .app-shell{max-width:1180px;margin:0 auto;padding:22px}
+    .hero{
+      position:relative;
+      overflow:hidden;
+      border-radius:24px;
+      padding:28px clamp(22px,5vw,54px);
+      color:white;
+      background:
+        radial-gradient(circle at 88% 18%,rgba(255,199,44,.32),transparent 26%),
+        linear-gradient(135deg,var(--red-dark),var(--red));
+      box-shadow:var(--shadow);
+    }
+    .hero::after{
+      content:"AT  CG  RNA  PROTEIN  AT  CG";
+      position:absolute;
+      right:-24px;
+      bottom:-18px;
+      color:rgba(255,255,255,.1);
+      font-weight:900;
+      font-size:clamp(30px,6vw,76px);
+      letter-spacing:.12em;
+      transform:rotate(-7deg);
+      white-space:nowrap;
+    }
+    .eyebrow{
+      position:relative;
+      z-index:1;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(255,255,255,.14);
+      font-size:.82rem;
+      font-weight:800;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+    }
+    .hero h1{position:relative;z-index:1;margin:12px 0 8px;font-size:clamp(2rem,5vw,3.8rem);line-height:1.04}
+    .hero p{position:relative;z-index:1;max-width:760px;margin:0;font-size:clamp(1rem,2vw,1.2rem);color:#fff7f8}
+
+    .view{display:none;margin-top:22px}
+    .view.active{display:block}
+    .card{
+      background:var(--paper);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:0 7px 22px rgba(31,41,55,.07);
+      padding:clamp(18px,3vw,28px);
+    }
+    .card + .card{margin-top:18px}
+    .section-title{margin:0 0 8px;font-size:1.45rem;line-height:1.2}
+    .lede{margin:0;color:var(--muted)}
+    .notice{
+      margin-top:16px;
+      padding:14px 16px;
+      border-left:5px solid var(--gold);
+      border-radius:12px;
+      background:#fff9e7;
+    }
+
+    details{
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+      overflow:hidden;
+    }
+    details + details{margin-top:10px}
+    summary{
+      padding:15px 18px;
+      font-weight:850;
+      cursor:pointer;
+      list-style:none;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    summary::-webkit-details-marker{display:none}
+    summary::before{
+      content:"▶";
+      color:var(--red);
+      font-size:.82rem;
+      transition:transform .2s ease;
+    }
+    details[open] summary::before{transform:rotate(90deg)}
+    .details-body{padding:0 18px 16px;color:var(--muted)}
+    .details-body ul{margin:8px 0 0;padding-left:22px}
+
+    .field{margin-top:18px}
+    .field label,.field legend{display:block;font-weight:800;margin-bottom:7px}
+    .required{color:var(--red)}
+    input[type="text"],textarea{
+      width:100%;
+      border:2px solid var(--line);
+      border-radius:12px;
+      padding:12px 14px;
+      color:var(--ink);
+      background:#fff;
+    }
+    textarea{min-height:110px;resize:vertical}
+    .help{font-size:.9rem;color:var(--muted);margin-top:6px}
+    .error{color:var(--bad);font-weight:750;margin-top:7px;display:none}
+    .error.show{display:block}
+
+    .scenario-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+    .scenario-option{position:relative}
+    .scenario-option input{position:absolute;opacity:0;pointer-events:none}
+    .scenario-option label{
+      display:block;
+      height:100%;
+      padding:16px;
+      border:2px solid var(--line);
+      border-radius:15px;
+      background:#fff;
+      cursor:pointer;
+      transition:.2s ease;
+    }
+    .scenario-option input:checked + label{
+      border-color:var(--red);
+      box-shadow:0 0 0 4px rgba(166,25,46,.1);
+      background:#fff8f9;
+    }
+    .scenario-option input:focus-visible + label{outline:4px solid rgba(31,92,143,.28);outline-offset:3px}
+    .scenario-icon{font-size:1.55rem;display:block;margin-bottom:5px}
+    .scenario-option strong{display:block;font-size:1.04rem}
+    .scenario-option span:last-child{display:block;color:var(--muted);font-size:.9rem;margin-top:3px}
+
+    .primary,.secondary,.ghost{
+      border:0;
+      border-radius:12px;
+      padding:12px 18px;
+      font-weight:850;
+      min-height:46px;
+    }
+    .primary{color:white;background:var(--red);box-shadow:0 7px 16px rgba(166,25,46,.22)}
+    .primary:hover{background:var(--red-dark)}
+    .primary:disabled{cursor:not-allowed;opacity:.46;box-shadow:none}
+    .secondary{color:var(--red-dark);background:#fff0f2;border:1px solid #efc4cc}
+    .secondary:hover{background:#ffe4e8}
+    .ghost{color:var(--ink);background:#eef1f5;border:1px solid var(--line)}
+    .button-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+
+    .progress-wrap{margin-top:20px}
+    .progress-steps{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:8px;
+    }
+    .progress-step{
+      padding:10px 8px;
+      text-align:center;
+      border-radius:12px;
+      background:#e8edf3;
+      color:#55606f;
+      font-size:.86rem;
+      font-weight:850;
+    }
+    .progress-step.current{background:#fff0f2;color:var(--red-dark);border:2px solid var(--red)}
+    .progress-step.done{background:#e7f4ed;color:var(--good)}
+
+    .context-strip{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:flex-start;
+      margin-top:18px;
+      padding:16px 18px;
+      border-radius:15px;
+      color:white;
+      background:linear-gradient(135deg,#263445,#354a60);
+    }
+    .context-strip h2{margin:0 0 4px;font-size:1.2rem}
+    .context-strip p{margin:0;color:#e7edf4}
+    .case-id{white-space:nowrap;font-size:.82rem;font-weight:850;background:rgba(255,255,255,.12);padding:7px 10px;border-radius:999px}
+
+    .challenge-grid{
+      display:grid;
+      grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);
+      gap:18px;
+      margin-top:18px;
+    }
+    .challenge-head{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:flex-start;
+      margin-bottom:16px;
+    }
+    .round-badge{
+      display:inline-block;
+      background:#fff0f2;
+      color:var(--red-dark);
+      border:1px solid #efc4cc;
+      border-radius:999px;
+      padding:5px 9px;
+      font-size:.8rem;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+    }
+    .challenge-head h2{margin:7px 0 4px;font-size:1.45rem}
+    .challenge-head p{margin:0;color:var(--muted)}
+    .target-box{
+      flex:0 0 auto;
+      min-width:170px;
+      padding:12px;
+      border-radius:13px;
+      background:#f5f7fa;
+      border:1px solid var(--line);
+      text-align:center;
+    }
+    .target-box small{display:block;color:var(--muted);font-weight:750}
+    .target-box strong{display:block;font-size:1.2rem;margin-top:2px}
+
+    .disruption{
+      display:none;
+      margin:0 0 16px;
+      padding:14px 16px;
+      border-radius:13px;
+      border:2px solid #e4b66b;
+      background:#fff8e8;
+    }
+    .disruption.show{display:block}
+    .disruption strong{display:block;color:var(--warn);margin-bottom:3px}
+
+    .control{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:15px;
+      background:#fbfcfe;
+    }
+    .control + .control{margin-top:12px}
+    .control-top{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .control-name{font-weight:900}
+    .control-value{font-weight:900;color:var(--red-dark);text-align:right}
+    .control p{margin:4px 0 10px;color:var(--muted);font-size:.9rem}
+    input[type="range"]{width:100%;accent-color:var(--red)}
+    .range-ends{display:flex;justify-content:space-between;gap:8px;color:#6b7280;font-size:.76rem;font-weight:700}
+
+    .dashboard{position:sticky;top:16px}
+    .dashboard h3{margin:0 0 14px;font-size:1.2rem}
+    .metric{
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+    }
+    .metric + .metric{margin-top:11px}
+    .metric-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+    .metric-name{font-weight:850}
+    .metric-number{font-size:1.45rem;font-weight:950}
+    .meter{height:12px;border-radius:999px;background:#e7ebf0;overflow:hidden;margin-top:9px}
+    .meter-fill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),#3c8bc4);transition:width .25s ease}
+    .meter-fill.energy{background:linear-gradient(90deg,#d79a20,#b85a14)}
+    .metric small{display:block;color:var(--muted);margin-top:7px}
+    .status{
+      margin-top:13px;
+      padding:14px;
+      border-radius:14px;
+      border:2px solid var(--line);
+      font-weight:800;
+    }
+    .status.good{background:#eaf6ef;border-color:#8ac3a6;color:var(--good)}
+    .status.warn{background:#fff8e8;border-color:#e4b66b;color:var(--warn)}
+    .status.bad{background:#fff0f2;border-color:#e3a1ac;color:var(--bad)}
+    .hint{margin:10px 0 0;color:var(--muted);font-size:.9rem}
+
+    .completion-banner{
+      display:none;
+      margin-top:16px;
+      padding:18px;
+      text-align:center;
+      border-radius:15px;
+      background:#eaf6ef;
+      border:2px solid #8ac3a6;
+    }
+    .completion-banner.show{display:block}
+    .completion-banner strong{display:block;color:var(--good);font-size:1.1rem}
+
+    .round-summary-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-top:16px;
+    }
+    .round-summary{
+      padding:15px;
+      border-radius:14px;
+      background:#f7f9fb;
+      border:1px solid var(--line);
+    }
+    .round-summary strong{display:block;margin-bottom:5px}
+    .round-summary span{display:block;color:var(--muted);font-size:.9rem}
+
+    .sentence-stem{
+      margin-top:12px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fbfcfe;
+    }
+    .sentence-stem label{font-weight:800;display:block;margin-bottom:8px}
+    .sentence-stem input{margin-top:4px}
+    .char-count{text-align:right;color:var(--muted);font-size:.8rem;margin-top:4px}
+
+    .pdf-note{
+      padding:14px 16px;
+      border-radius:13px;
+      background:#eef5fb;
+      border-left:5px solid var(--blue);
+      margin-top:18px;
+    }
+    .footer-note{text-align:center;color:var(--muted);font-size:.82rem;margin:20px 0 5px}
+
+    @media (max-width:860px){
+      .challenge-grid{grid-template-columns:1fr}
+      .dashboard{position:static}
+      .challenge-head{display:block}
+      .target-box{margin-top:12px;text-align:left;min-width:0}
+      .round-summary-grid{grid-template-columns:1fr}
+    }
+    @media (max-width:650px){
+      .app-shell{padding:12px}
+      .hero{border-radius:18px;padding:24px 18px}
+      .scenario-grid{grid-template-columns:1fr}
+      .progress-steps{grid-template-columns:repeat(2,1fr)}
+      .context-strip{display:block}
+      .case-id{display:inline-block;margin-top:10px}
+      .button-row{display:grid;grid-template-columns:1fr}
+      .button-row button{width:100%}
+    }
+    @media (prefers-reduced-motion:reduce){
+      *{scroll-behavior:auto!important;transition:none!important}
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <span class="eyebrow">Interactive gene regulation lab</span>
+      <h1>Gene Expression Remix</h1>
+      <p>Tune a cell so it produces the right amount of protein at the right time—without wasting energy.</p>
+    </header>
+
+    <main>
+      <section id="introView" class="view active" aria-labelledby="introTitle">
+        <div class="card">
+          <h2 id="introTitle" class="section-title">Your mission</h2>
+          <p class="lede">Cells constantly adjust which genes are used and how much protein is produced. In this simulation, you will control four levels of gene expression during a real-life situation.</p>
+          <div class="notice"><strong>Keep it personal, not private.</strong> Choose a routine life situation. You never need to share a diagnosis, medication, or private health information.</div>
+        </div>
+
+        <div class="card" aria-label="Assignment overview">
+          <details open>
+            <summary>Purpose</summary>
+            <div class="details-body">Use cause-and-effect reasoning to explain how chromatin, transcription factors, mRNA stability, and translation work together to regulate protein production.</div>
+          </details>
+          <details>
+            <summary>What you will do</summary>
+            <div class="details-body">
+              <ul>
+                <li>Meet a cell's immediate protein need.</li>
+                <li>Adapt when one regulatory process is disrupted.</li>
+                <li>Scale production back when the need passes.</li>
+                <li>Complete brief explanations and download one PDF for Canvas.</li>
+              </ul>
+            </div>
+          </details>
+          <details>
+            <summary>Criteria for success</summary>
+            <div class="details-body">Your settings must meet each protein target within the energy budget. Your explanations should use evidence from your own simulation and accurately connect a control to its effect on protein production.</div>
+          </details>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">Set up your simulation</h2>
+          <div class="field">
+            <label for="studentName">Student name <span class="required" aria-hidden="true">*</span></label>
+            <input id="studentName" type="text" autocomplete="name" maxlength="80" placeholder="Enter your first and last name" />
+            <div id="nameError" class="error" role="alert">Enter your name before beginning.</div>
+          </div>
+
+          <fieldset class="field" style="border:0;padding:0;margin-left:0;margin-right:0">
+            <legend>Choose a situation that feels relevant to your life <span class="required" aria-hidden="true">*</span></legend>
+            <div id="scenarioGrid" class="scenario-grid"></div>
+            <div id="scenarioError" class="error" role="alert">Choose one situation before beginning.</div>
+          </fieldset>
+
+          <div class="button-row">
+            <button id="startBtn" class="primary" type="button">Start the simulation</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="simView" class="view" aria-labelledby="simTitle">
+        <div class="progress-wrap" aria-label="Assignment progress">
+          <div class="progress-steps">
+            <div id="step1" class="progress-step current">1. Meet the need</div>
+            <div id="step2" class="progress-step">2. Adapt</div>
+            <div id="step3" class="progress-step">3. Scale back</div>
+            <div id="step4" class="progress-step">4. Explain</div>
+          </div>
+        </div>
+
+        <div class="context-strip">
+          <div>
+            <h2 id="simTitle">Selected situation: <span id="scenarioTitle"></span></h2>
+            <p id="scenarioDescription"></p>
+          </div>
+          <div class="case-id">Case ID: <span id="caseId"></span></div>
+        </div>
+
+        <div class="challenge-grid">
+          <section class="card" aria-labelledby="roundTitle">
+            <div class="challenge-head">
+              <div>
+                <span id="roundBadge" class="round-badge">Round 1</span>
+                <h2 id="roundTitle">Meet the cell's need</h2>
+                <p id="roundInstructions"></p>
+              </div>
+              <div class="target-box" aria-label="Current target">
+                <small>Success target</small>
+                <strong id="targetText"></strong>
+                <small id="budgetText"></small>
+              </div>
+            </div>
+
+            <div id="disruptionBox" class="disruption" aria-live="polite">
+              <strong id="disruptionTitle"></strong>
+              <span id="disruptionText"></span>
+            </div>
+
+            <div class="control">
+              <div class="control-top">
+                <span class="control-name">Chromatin access</span>
+                <span id="chromatinValue" class="control-value"></span>
+              </div>
+              <p>Controls how accessible the DNA is to the transcription machinery.</p>
+              <input id="chromatin" type="range" min="0" max="4" value="2" step="1" aria-label="Chromatin access" />
+              <div class="range-ends"><span>Tightly packed</span><span>Open</span></div>
+            </div>
+
+            <div class="control">
+              <div class="control-top">
+                <span class="control-name">Activator transcription factors</span>
+                <span id="tfValue" class="control-value"></span>
+              </div>
+              <p>Influences how strongly transcription is initiated.</p>
+              <input id="tf" type="range" min="0" max="4" value="2" step="1" aria-label="Activator transcription factor activity" />
+              <div class="range-ends"><span>Absent</span><span>Very high</span></div>
+            </div>
+
+            <div class="control">
+              <div class="control-top">
+                <span class="control-name">mRNA stability</span>
+                <span id="stabilityValue" class="control-value"></span>
+              </div>
+              <p>Controls how long an mRNA molecule remains available for translation.</p>
+              <input id="stability" type="range" min="0" max="4" value="2" step="1" aria-label="Messenger RNA stability" />
+              <div class="range-ends"><span>Very short-lived</span><span>Very stable</span></div>
+            </div>
+
+            <div class="control">
+              <div class="control-top">
+                <span class="control-name">Translation rate</span>
+                <span id="translationValue" class="control-value"></span>
+              </div>
+              <p>Controls how quickly ribosomes use mRNA to assemble protein.</p>
+              <input id="translation" type="range" min="0" max="4" value="2" step="1" aria-label="Translation rate" />
+              <div class="range-ends"><span>Paused</span><span>Very high</span></div>
+            </div>
+
+            <div id="roundComplete" class="completion-banner" aria-live="polite">
+              <strong>Target achieved</strong>
+              <span>Your protein output and energy use both meet the challenge.</span>
+            </div>
+
+            <div class="button-row">
+              <button id="lockRoundBtn" class="primary" type="button" disabled>Lock in this solution</button>
+              <button id="resetControlsBtn" class="ghost" type="button">Reset controls</button>
+            </div>
+          </section>
+
+          <aside class="card dashboard" aria-label="Live cell dashboard">
+            <h3>Live cell dashboard</h3>
+
+            <div class="metric">
+              <div class="metric-top">
+                <span class="metric-name">Mature mRNA available</span>
+                <span id="mrnaNumber" class="metric-number">0</span>
+              </div>
+              <div class="meter" aria-hidden="true"><div id="mrnaMeter" class="meter-fill"></div></div>
+              <small>Created through transcription and retained through mRNA stability.</small>
+            </div>
+
+            <div class="metric">
+              <div class="metric-top">
+                <span class="metric-name">Protein output</span>
+                <span id="proteinNumber" class="metric-number">0</span>
+              </div>
+              <div class="meter" aria-hidden="true"><div id="proteinMeter" class="meter-fill"></div></div>
+              <small id="proteinTargetLabel"></small>
+            </div>
+
+            <div class="metric">
+              <div class="metric-top">
+                <span class="metric-name">Energy use</span>
+                <span id="energyNumber" class="metric-number">0</span>
+              </div>
+              <div class="meter" aria-hidden="true"><div id="energyMeter" class="meter-fill energy"></div></div>
+              <small id="energyTargetLabel"></small>
+            </div>
+
+            <div id="statusBox" class="status bad" role="status" aria-live="polite"></div>
+            <p id="hintText" class="hint"></p>
+          </aside>
+        </div>
+      </section>
+
+      <section id="reflectionView" class="view" aria-labelledby="reflectionTitle">
+        <div class="progress-wrap" aria-label="Assignment progress">
+          <div class="progress-steps">
+            <div class="progress-step done">1. Meet the need</div>
+            <div class="progress-step done">2. Adapt</div>
+            <div class="progress-step done">3. Scale back</div>
+            <div class="progress-step current">4. Explain</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 id="reflectionTitle" class="section-title">Explain your decisions</h2>
+          <p class="lede">Use your own simulation evidence. Brief, specific explanations are stronger than long definitions.</p>
+          <div id="roundSummaries" class="round-summary-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="field">
+            <label for="strategyResponse">1. Which controls did you adjust to meet the original protein target, and why did that combination work? <span class="required">*</span></label>
+            <textarea id="strategyResponse" maxlength="700" data-min="50" placeholder="Refer to at least two of your settings and your resulting protein output."></textarea>
+            <div class="char-count"><span data-count-for="strategyResponse">0</span>/700 characters</div>
+            <div class="error" data-error-for="strategyResponse">Write at least 50 characters using evidence from your simulation.</div>
+          </div>
+
+          <div class="field">
+            <label for="disruptionResponse">2. What disruption occurred, and how did you change the cell's regulation to compensate? <span class="required">*</span></label>
+            <textarea id="disruptionResponse" maxlength="700" data-min="50" placeholder="Explain what changed and how your revised settings restored the target."></textarea>
+            <div class="char-count"><span data-count-for="disruptionResponse">0</span>/700 characters</div>
+            <div class="error" data-error-for="disruptionResponse">Write at least 50 characters using your Round 2 results.</div>
+          </div>
+
+          <div class="field">
+            <label for="causeResponse">3. Choose one control. What happened to mRNA or protein output when you increased or decreased it, and why? <span class="required">*</span></label>
+            <textarea id="causeResponse" maxlength="700" data-min="50" placeholder="Describe a cause-and-effect relationship you observed."></textarea>
+            <div class="char-count"><span data-count-for="causeResponse">0</span>/700 characters</div>
+            <div class="error" data-error-for="causeResponse">Write at least 50 characters describing a cause-and-effect relationship.</div>
+          </div>
+
+          <div class="field">
+            <label for="tradeoffResponse">4. Why would keeping every gene highly active all the time be inefficient or harmful to a cell? <span class="required">*</span></label>
+            <textarea id="tradeoffResponse" maxlength="600" data-min="50" placeholder="Connect unnecessary protein production to cellular resources or function."></textarea>
+            <div class="char-count"><span data-count-for="tradeoffResponse">0</span>/600 characters</div>
+            <div class="error" data-error-for="tradeoffResponse">Write at least 50 characters explaining the cellular tradeoff.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">Why this matters in my life</h2>
+          <p class="lede">Complete each thought in your own words. You may connect it to daily life, health decisions, or a future career.</p>
+
+          <div class="sentence-stem">
+            <label for="lifeSituation">One situation in my life where gene regulation matters is… <span class="required">*</span></label>
+            <input id="lifeSituation" type="text" maxlength="220" data-min="12" />
+            <div class="error" data-error-for="lifeSituation">Complete the sentence with at least 12 characters.</div>
+          </div>
+
+          <div class="sentence-stem">
+            <label for="proteinReason">In this situation, cells need to change protein production because… <span class="required">*</span></label>
+            <input id="proteinReason" type="text" maxlength="300" data-min="20" placeholder="Explain what the cell needs to accomplish." />
+            <div class="error" data-error-for="proteinReason">Complete the sentence with at least 20 characters.</div>
+          </div>
+
+          <div class="sentence-stem">
+            <label for="importanceReason">Knowing this is important to me because… <span class="required">*</span></label>
+            <input id="importanceReason" type="text" maxlength="300" data-min="20" placeholder="Explain why this knowledge feels useful or meaningful." />
+            <div class="error" data-error-for="importanceReason">Complete the sentence with at least 20 characters.</div>
+          </div>
+
+          <div class="pdf-note"><strong>Your submission:</strong> Select the button below to create one completed Gene Expression Report. Upload that PDF to the Canvas assignment.</div>
+          <div id="formError" class="error" role="alert">Complete all required responses before generating the PDF.</div>
+          <div class="button-row">
+            <button id="pdfBtn" class="primary" type="button">Download my Gene Expression Report</button>
+            <button id="restartBtn" class="secondary" type="button">Start over</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <p class="footer-note">Gene Expression Remix • Introductory Biology Interactive</p>
+  </div>
+
+  <script>
+    'use strict';
+
+    const scenarios = [
+      {
+        id:'exercise', icon:'🏃', title:'Recovering after exercise',
+        short:'Cells temporarily increase proteins involved in repair and adaptation.',
+        description:'After physical activity, cells adjust protein production to support recovery and adaptation without keeping those genes maximally active all day.',
+        lifePhrase:'recovering after exercise', low:68, high:80, budget:112
+      },
+      {
+        id:'healing', icon:'🩹', title:'Healing a small cut',
+        short:'Cells coordinate proteins involved in repair and rebuilding.',
+        description:'During tissue repair, cells need a temporary increase in proteins involved in communication, rebuilding, and recovery.',
+        lifePhrase:'healing after a small cut', low:70, high:82, budget:112
+      },
+      {
+        id:'meal', icon:'🍽️', title:'Digesting a meal',
+        short:'Cells adjust proteins that support digestion and nutrient processing.',
+        description:'After eating, cells respond to changing nutrients and signals by adjusting production of proteins used in digestion and metabolism.',
+        lifePhrase:'digesting and processing a meal', low:60, high:72, budget:104
+      },
+      {
+        id:'wake', icon:'⏰', title:'Waking up and becoming alert',
+        short:'Daily signals alter expression of proteins tied to biological rhythms.',
+        description:'As the body transitions from sleep to wakefulness, cells adjust gene expression in response to circadian and environmental signals.',
+        lifePhrase:'waking up and becoming alert', low:48, high:60, budget:97
+      },
+      {
+        id:'stress', icon:'🧠', title:'Responding to short-term stress',
+        short:'Cell signals temporarily change which proteins are produced.',
+        description:'During a brief stressful situation, signaling pathways can activate transcription factors and alter protein production for a temporary response.',
+        lifePhrase:'responding to a short-term stressful situation', low:55, high:67, budget:101
+      },
+      {
+        id:'cold', icon:'🧥', title:'Adjusting to cold conditions',
+        short:'Cells alter activity to help maintain stable internal conditions.',
+        description:'A change in temperature can trigger signals that alter gene expression and support the body’s efforts to maintain stable internal conditions.',
+        lifePhrase:'adjusting to cold conditions', low:55, high:67, budget:101
+      },
+      {
+        id:'learning', icon:'🎸', title:'Practicing a new skill',
+        short:'Neurons use regulated protein production as connections change.',
+        description:'As a new skill is practiced, neurons can adjust protein production as their connections and activity patterns change.',
+        lifePhrase:'practicing and learning a new skill', low:40, high:52, budget:90
+      }
+    ];
+
+    const disruptions = [
+      {
+        id:'chromatin', title:'Disruption: chromatin becomes more compact',
+        text:'The gene is less accessible, so the same chromatin setting now supports less transcription.',
+        factor:'chromatin', multiplier:0.82
+      },
+      {
+        id:'tf', title:'Disruption: an activating transcription factor is weakened',
+        text:'The activator is less effective, reducing the initiation of transcription.',
+        factor:'tf', multiplier:0.82
+      },
+      {
+        id:'stability', title:'Disruption: mRNA is degraded more quickly',
+        text:'Each mRNA molecule remains available for less time before it is broken down.',
+        factor:'stability', multiplier:0.82
+      },
+      {
+        id:'translation', title:'Disruption: ribosome activity slows',
+        text:'The same amount of mRNA now produces protein less efficiently.',
+        factor:'translation', multiplier:0.82
+      }
+    ];
+
+    const levelLabels = {
+      chromatin:['Tightly packed heterochromatin','Mostly closed','Partially accessible','Mostly open','Open euchromatin'],
+      tf:['Absent','Low','Moderate','High','Very high'],
+      stability:['Very short-lived','Short-lived','Moderate','Stable','Very stable'],
+      translation:['Paused','Low','Moderate','High','Very high']
+    };
+
+    const state = {
+      studentName:'', scenario:null, caseId:'', round:1, disruption:null,
+      results:[], current:null
+    };
+
+    const els = {
+      introView:document.getElementById('introView'), simView:document.getElementById('simView'), reflectionView:document.getElementById('reflectionView'),
+      scenarioGrid:document.getElementById('scenarioGrid'), studentName:document.getElementById('studentName'), nameError:document.getElementById('nameError'), scenarioError:document.getElementById('scenarioError'), startBtn:document.getElementById('startBtn'),
+      scenarioTitle:document.getElementById('scenarioTitle'), scenarioDescription:document.getElementById('scenarioDescription'), caseId:document.getElementById('caseId'),
+      roundBadge:document.getElementById('roundBadge'), roundTitle:document.getElementById('roundTitle'), roundInstructions:document.getElementById('roundInstructions'), targetText:document.getElementById('targetText'), budgetText:document.getElementById('budgetText'),
+      disruptionBox:document.getElementById('disruptionBox'), disruptionTitle:document.getElementById('disruptionTitle'), disruptionText:document.getElementById('disruptionText'),
+      chromatin:document.getElementById('chromatin'), tf:document.getElementById('tf'), stability:document.getElementById('stability'), translation:document.getElementById('translation'),
+      chromatinValue:document.getElementById('chromatinValue'), tfValue:document.getElementById('tfValue'), stabilityValue:document.getElementById('stabilityValue'), translationValue:document.getElementById('translationValue'),
+      mrnaNumber:document.getElementById('mrnaNumber'), mrnaMeter:document.getElementById('mrnaMeter'), proteinNumber:document.getElementById('proteinNumber'), proteinMeter:document.getElementById('proteinMeter'), energyNumber:document.getElementById('energyNumber'), energyMeter:document.getElementById('energyMeter'),
+      proteinTargetLabel:document.getElementById('proteinTargetLabel'), energyTargetLabel:document.getElementById('energyTargetLabel'), statusBox:document.getElementById('statusBox'), hintText:document.getElementById('hintText'), roundComplete:document.getElementById('roundComplete'), lockRoundBtn:document.getElementById('lockRoundBtn'), resetControlsBtn:document.getElementById('resetControlsBtn'),
+      step1:document.getElementById('step1'),step2:document.getElementById('step2'),step3:document.getElementById('step3'),step4:document.getElementById('step4'),
+      roundSummaries:document.getElementById('roundSummaries'), pdfBtn:document.getElementById('pdfBtn'), restartBtn:document.getElementById('restartBtn'), formError:document.getElementById('formError')
+    };
+
+    function buildScenarioChoices(){
+      els.scenarioGrid.innerHTML = scenarios.map((s,i)=>`
+        <div class="scenario-option">
+          <input type="radio" id="scenario-${s.id}" name="scenario" value="${s.id}" ${i===0?'':''} />
+          <label for="scenario-${s.id}">
+            <span class="scenario-icon" aria-hidden="true">${s.icon}</span>
+            <strong>${s.title}</strong>
+            <span>${s.short}</span>
+          </label>
+        </div>`).join('');
+    }
+
+    function makeCaseId(){
+      const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let id='';
+      for(let i=0;i<7;i++) id += chars[Math.floor(Math.random()*chars.length)];
+      return id;
+    }
+
+    function showView(view){
+      [els.introView,els.simView,els.reflectionView].forEach(v=>v.classList.remove('active'));
+      view.classList.add('active');
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    function startSimulation(){
+      const name=els.studentName.value.trim();
+      const selected=document.querySelector('input[name="scenario"]:checked');
+      els.nameError.classList.toggle('show',!name);
+      els.scenarioError.classList.toggle('show',!selected);
+      if(!name || !selected) return;
+
+      state.studentName=name;
+      state.scenario=scenarios.find(s=>s.id===selected.value);
+      state.caseId=makeCaseId();
+      state.round=1;
+      state.results=[];
+      state.disruption=disruptions[Math.floor(Math.random()*disruptions.length)];
+
+      els.scenarioTitle.textContent=state.scenario.title;
+      els.scenarioDescription.textContent=state.scenario.description;
+      els.caseId.textContent=state.caseId;
+      document.getElementById('lifeSituation').value=state.scenario.lifePhrase;
+
+      showView(els.simView);
+      configureRound();
+    }
+
+    function getRoundSettings(){
+      if(state.round===1) return {low:state.scenario.low,high:state.scenario.high,budget:state.scenario.budget};
+      if(state.round===2) return {low:state.scenario.low,high:state.scenario.high,budget:114};
+      return {low:30,high:42,budget:80};
+    }
+
+    function configureRound(){
+      const r=state.round;
+      const cfg=getRoundSettings();
+      els.roundBadge.textContent=`Round ${r}`;
+      els.disruptionBox.classList.toggle('show',r===2);
+      if(r===1){
+        els.roundTitle.textContent="Meet the cell's need";
+        els.roundInstructions.textContent='Adjust the controls until protein output is in the target range without exceeding the energy budget.';
+      }else if(r===2){
+        els.roundTitle.textContent='Adapt to a disruption';
+        els.roundInstructions.textContent='One part of gene regulation is now less effective. Change the controls to restore the needed protein level.';
+        els.disruptionTitle.textContent=state.disruption.title;
+        els.disruptionText.textContent=state.disruption.text;
+      }else{
+        els.roundTitle.textContent='Scale production back';
+        els.roundInstructions.textContent='The immediate need has passed. Reduce protein production to a lower maintenance range while conserving energy.';
+      }
+      els.targetText.textContent=`${cfg.low}–${cfg.high} protein units`;
+      els.budgetText.textContent=`Energy budget: ${cfg.budget} or less`;
+      els.proteinTargetLabel.textContent=`Target: ${cfg.low}–${cfg.high} units`;
+      els.energyTargetLabel.textContent=`Budget: ${cfg.budget} units or less`;
+      updateProgress();
+      resetControls();
+    }
+
+    function updateProgress(){
+      [els.step1,els.step2,els.step3,els.step4].forEach((el,i)=>{
+        el.classList.remove('current','done');
+        const n=i+1;
+        if(n<state.round) el.classList.add('done');
+        if(n===state.round) el.classList.add('current');
+      });
+    }
+
+    function resetControls(){
+      const defaults=state.round===3?[3,3,2,1]:[2,2,2,2];
+      [els.chromatin,els.tf,els.stability,els.translation].forEach((el,i)=>el.value=defaults[i]);
+      updateSimulation();
+    }
+
+    function factorsFromControls(){
+      const c=Number(els.chromatin.value), t=Number(els.tf.value), s=Number(els.stability.value), r=Number(els.translation.value);
+      let cf=0.15+0.85*(c/4);
+      let tf=0.20+0.80*(t/4);
+      let sf=0.50+0.50*(s/4);
+      let rf=0.50+0.50*(r/4);
+      if(state.round===2 && state.disruption){
+        if(state.disruption.factor==='chromatin') cf*=state.disruption.multiplier;
+        if(state.disruption.factor==='tf') tf*=state.disruption.multiplier;
+        if(state.disruption.factor==='stability') sf*=state.disruption.multiplier;
+        if(state.disruption.factor==='translation') rf*=state.disruption.multiplier;
+      }
+      return {c,t,s,r,cf,tf,sf,rf};
+    }
+
+    function calculate(){
+      const f=factorsFromControls();
+      const mrna=Math.round(100*f.cf*f.tf*f.sf);
+      const protein=Math.round(100*f.cf*f.tf*f.sf*f.rf);
+      const energy=10+7*f.c+8*f.t+5*f.s+7*f.r;
+      const cfg=getRoundSettings();
+      const outputOK=protein>=cfg.low && protein<=cfg.high;
+      const energyOK=energy<=cfg.budget;
+      return {...f,mrna,protein,energy,cfg,success:outputOK&&energyOK,outputOK,energyOK};
+    }
+
+    function updateSimulation(){
+      const result=calculate();
+      state.current=result;
+      els.chromatinValue.textContent=levelLabels.chromatin[result.c];
+      els.tfValue.textContent=levelLabels.tf[result.t];
+      els.stabilityValue.textContent=levelLabels.stability[result.s];
+      els.translationValue.textContent=levelLabels.translation[result.r];
+
+      els.mrnaNumber.textContent=result.mrna;
+      els.proteinNumber.textContent=result.protein;
+      els.energyNumber.textContent=result.energy;
+      els.mrnaMeter.style.width=`${Math.min(result.mrna,100)}%`;
+      els.proteinMeter.style.width=`${Math.min(result.protein,100)}%`;
+      els.energyMeter.style.width=`${Math.min((result.energy/120)*100,100)}%`;
+
+      let message='',hint='',statusClass='bad';
+      if(result.success){
+        message='Success: protein output is on target and energy use is within budget.';
+        hint='Lock in this solution when you are ready.';
+        statusClass='good';
+      }else if(result.protein<result.cfg.low){
+        message='Protein output is below the target.';
+        hint=result.mrna<result.cfg.low ? 'Look upstream: chromatin access, transcription factors, or mRNA stability may be limiting the message.' : 'There is mRNA available. Consider what happens during translation.';
+        statusClass='bad';
+      }else if(result.protein>result.cfg.high){
+        message='Protein output is above the target.';
+        hint='More is not always better. Reduce one or more controls while watching both output and energy.';
+        statusClass='warn';
+      }else{
+        message='Protein output is correct, but energy use exceeds the budget.';
+        hint='Try a different combination that preserves output with less cellular cost.';
+        statusClass='warn';
+      }
+      els.statusBox.className=`status ${statusClass}`;
+      els.statusBox.textContent=message;
+      els.hintText.textContent=hint;
+      els.roundComplete.classList.toggle('show',result.success);
+      els.lockRoundBtn.disabled=!result.success;
+    }
+
+    function lockRound(){
+      if(!state.current || !state.current.success) return;
+      const r=state.current;
+      state.results.push({
+        round:state.round,
+        title:state.round===1?'Meet the need':state.round===2?'Adapt to the disruption':'Scale production back',
+        chromatin:r.c, tf:r.t, stability:r.s, translation:r.r,
+        chromatinLabel:levelLabels.chromatin[r.c], tfLabel:levelLabels.tf[r.t], stabilityLabel:levelLabels.stability[r.s], translationLabel:levelLabels.translation[r.r],
+        mrna:r.mrna, protein:r.protein, energy:r.energy, low:r.cfg.low, high:r.cfg.high, budget:r.cfg.budget
+      });
+      if(state.round<3){
+        state.round += 1;
+        configureRound();
+        document.querySelector('.progress-wrap').scrollIntoView({behavior:'smooth',block:'start'});
+      }else{
+        buildRoundSummaries();
+        showView(els.reflectionView);
+      }
+    }
+
+    function buildRoundSummaries(){
+      els.roundSummaries.innerHTML=state.results.map(r=>`
+        <div class="round-summary">
+          <strong>Round ${r.round}: ${r.title}</strong>
+          <span>Protein: ${r.protein} units</span>
+          <span>mRNA: ${r.mrna} units</span>
+          <span>Energy: ${r.energy}/${r.budget}</span>
+        </div>`).join('');
+    }
+
+    function setupTextCounters(){
+      document.querySelectorAll('textarea[maxlength]').forEach(area=>{
+        const counter=document.querySelector(`[data-count-for="${area.id}"]`);
+        area.addEventListener('input',()=>{ if(counter) counter.textContent=area.value.length; });
+      });
+    }
+
+    function validateResponses(){
+      let valid=true;
+      document.querySelectorAll('[data-min]').forEach(field=>{
+        const min=Number(field.dataset.min);
+        const ok=field.value.trim().length>=min;
+        const error=document.querySelector(`[data-error-for="${field.id}"]`);
+        if(error) error.classList.toggle('show',!ok);
+        if(!ok) valid=false;
+      });
+      els.formError.classList.toggle('show',!valid);
+      if(!valid){
+        const first=document.querySelector('.error.show');
+        if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
+      }
+      return valid;
+    }
+
+    function cleanFileName(name){
+      return name.replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'').toLowerCase() || 'student';
+    }
+
+    function generatePDF(){
+      if(!validateResponses()) return;
+      if(!window.jspdf || !window.jspdf.jsPDF){
+        alert('The PDF library did not load. Check your internet connection and reload the page.');
+        return;
+      }
+      const {jsPDF}=window.jspdf;
+      const doc=new jsPDF({unit:'pt',format:'letter'});
+      const pageW=612,pageH=792,margin=48,contentW=pageW-margin*2;
+      let y=0;
+
+      const colors={red:[166,25,46],dark:[31,41,55],muted:[95,107,122],gold:[255,199,44],light:[247,249,251],line:[216,222,232],green:[23,107,69]};
+
+      function header(){
+        doc.setFillColor(...colors.red); doc.rect(0,0,pageW,86,'F');
+        doc.setFillColor(...colors.gold); doc.rect(0,86,pageW,7,'F');
+        doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(22); doc.text('Gene Expression Remix',margin,39);
+        doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.text('Cellular Gene Expression Report',margin,59);
+        y=119;
+      }
+      function footer(){
+        const n=doc.getNumberOfPages();
+        for(let i=1;i<=n;i++){
+          doc.setPage(i); doc.setDrawColor(...colors.line); doc.line(margin,pageH-35,pageW-margin,pageH-35);
+          doc.setTextColor(...colors.muted); doc.setFontSize(8.5); doc.setFont('helvetica','normal');
+          doc.text(`Case ID: ${state.caseId}`,margin,pageH-20);
+          doc.text(`Page ${i} of ${n}`,pageW-margin,pageH-20,{align:'right'});
+        }
+      }
+      function newPage(){ doc.addPage(); header(); }
+      function ensure(space){ if(y+space>pageH-58) newPage(); }
+      function sectionTitle(text){
+        ensure(34); doc.setTextColor(...colors.red); doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.text(text,margin,y); y+=19;
+        doc.setDrawColor(...colors.gold); doc.setLineWidth(3); doc.line(margin,y,pageW-margin,y); y+=14;
+      }
+      function wrapped(text,x,width,size=10.5,color=colors.dark,font='normal',gap=6){
+        doc.setFont('helvetica',font); doc.setFontSize(size); doc.setTextColor(...color);
+        const lines=doc.splitTextToSize(text,width); const h=lines.length*(size+3);
+        ensure(h+gap); doc.text(lines,x,y); y+=h+gap;
+      }
+      function labelValue(label,value){
+        ensure(20); doc.setFontSize(9.5); doc.setFont('helvetica','bold'); doc.setTextColor(...colors.muted); doc.text(label,margin,y);
+        doc.setFont('helvetica','normal'); doc.setTextColor(...colors.dark); doc.text(value,margin+112,y); y+=16;
+      }
+      function roundBox(r){
+        ensure(124);
+        const boxY=y;
+        doc.setFillColor(...colors.light); doc.setDrawColor(...colors.line); doc.roundedRect(margin,boxY,contentW,112,8,8,'FD');
+        doc.setTextColor(...colors.red); doc.setFont('helvetica','bold'); doc.setFontSize(11.5); doc.text(`Round ${r.round}: ${r.title}`,margin+14,boxY+21);
+        doc.setTextColor(...colors.dark); doc.setFontSize(9.2); doc.setFont('helvetica','normal');
+        doc.text(`Chromatin: ${r.chromatinLabel}`,margin+14,boxY+42);
+        doc.text(`Transcription factors: ${r.tfLabel}`,margin+14,boxY+58);
+        doc.text(`mRNA stability: ${r.stabilityLabel}`,margin+14,boxY+74);
+        doc.text(`Translation: ${r.translationLabel}`,margin+14,boxY+90);
+        const x2=margin+305;
+        doc.setFont('helvetica','bold'); doc.text(`mRNA: ${r.mrna} units`,x2,boxY+42);
+        doc.text(`Protein: ${r.protein} units`,x2,boxY+58);
+        doc.text(`Target: ${r.low}-${r.high}`,x2,boxY+74);
+        doc.setTextColor(...colors.green); doc.text(`Energy: ${r.energy}/${r.budget} - target met`,x2,boxY+90);
+        y=boxY+126;
+      }
+      function responseBlock(number,prompt,response){
+        ensure(44);
+        doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(...colors.dark);
+        const qLines=doc.splitTextToSize(`${number}. ${prompt}`,contentW); doc.text(qLines,margin,y); y+=qLines.length*13+5;
+        wrapped(response,margin,contentW,10.5,colors.dark,'normal',12);
+      }
+
+      header();
+      sectionTitle('Student and scenario');
+      labelValue('Student',state.studentName);
+      labelValue('Case ID',state.caseId);
+      labelValue('Date completed',new Date().toLocaleDateString());
+      labelValue('Selected situation',state.scenario.title);
+      wrapped(state.scenario.description,margin,contentW,10.5,colors.dark,'normal',12);
+
+      sectionTitle('Simulation results');
+      roundBox(state.results[0]);
+      roundBox(state.results[1]);
+      wrapped(`Round 2 disruption: ${state.disruption.title.replace('Disruption: ','')}. ${state.disruption.text}`,margin,contentW,9.8,colors.muted,'italic',10);
+      roundBox(state.results[2]);
+
+      sectionTitle('Reasoning from the simulation');
+      responseBlock('1','Which controls did you adjust to meet the original protein target, and why did that combination work?',document.getElementById('strategyResponse').value.trim());
+      responseBlock('2',"What disruption occurred, and how did you change the cell's regulation to compensate?",document.getElementById('disruptionResponse').value.trim());
+      responseBlock('3','Choose one control. What happened to mRNA or protein output when you increased or decreased it, and why?',document.getElementById('causeResponse').value.trim());
+      responseBlock('4','Why would keeping every gene highly active all the time be inefficient or harmful to a cell?',document.getElementById('tradeoffResponse').value.trim());
+
+      sectionTitle('Why this matters in my life');
+      wrapped(`One situation in my life where gene regulation matters is ${document.getElementById('lifeSituation').value.trim()}.`,margin,contentW,10.5,colors.dark,'normal',8);
+      wrapped(`In this situation, cells need to change protein production because ${document.getElementById('proteinReason').value.trim()}.`,margin,contentW,10.5,colors.dark,'normal',8);
+      wrapped(`Knowing this is important to me because ${document.getElementById('importanceReason').value.trim()}.`,margin,contentW,10.5,colors.dark,'normal',8);
+
+      ensure(45);
+      doc.setFillColor(234,246,239); doc.setDrawColor(138,195,166); doc.roundedRect(margin,y,contentW,34,7,7,'FD');
+      doc.setTextColor(...colors.green); doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+      doc.text('Completed: all three simulation challenges met their protein and energy targets.',margin+12,y+21);
+
+      footer();
+      doc.save(`${cleanFileName(state.studentName)}-gene-expression-report.pdf`);
+    }
+
+    function restart(){
+      if(!confirm('Start over and clear your current simulation results?')) return;
+      state.studentName='';state.scenario=null;state.caseId='';state.round=1;state.disruption=null;state.results=[];state.current=null;
+      els.studentName.value='';
+      document.querySelectorAll('input[name="scenario"]').forEach(i=>i.checked=false);
+      document.querySelectorAll('textarea,input[data-min]').forEach(f=>{ if(f.id!=='studentName') f.value=''; });
+      document.querySelectorAll('[data-count-for]').forEach(c=>c.textContent='0');
+      document.querySelectorAll('.error').forEach(e=>e.classList.remove('show'));
+      showView(els.introView);
+    }
+
+    buildScenarioChoices();
+    setupTextCounters();
+    els.startBtn.addEventListener('click',startSimulation);
+    [els.chromatin,els.tf,els.stability,els.translation].forEach(el=>el.addEventListener('input',updateSimulation));
+    els.lockRoundBtn.addEventListener('click',lockRound);
+    els.resetControlsBtn.addEventListener('click',resetControls);
+    els.pdfBtn.addEventListener('click',generatePDF);
+    els.restartBtn.addEventListener('click',restart);
+  </script>
+</body>
+</html>
